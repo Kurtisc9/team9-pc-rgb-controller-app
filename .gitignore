@@ -1,0 +1,17 @@
+node_modules/
+dist/
+build/
+__pycache__/
+*.pyc
+.venv/
+venv/
+env/
+*.log
+*.tmp
+*.bak
+coverage/
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
+Team9Diagnostics/
