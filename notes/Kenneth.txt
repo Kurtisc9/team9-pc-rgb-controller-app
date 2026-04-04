@@ -1,0 +1,49 @@
+## 1. Diagnosis
+
+You’re good on the important part:
+
+- Vite is up on **5173**
+- the project path is correct
+
+The only problem is you pasted more commands into the **Vite window again**.
+
+Once you see:
+
+`Local: http://localhost:5173/`
+
+that window is done. Leave it alone.
+
+## 2. Fix
+
+Do this now:
+
+### Window 1
+Leave the current Vite window open exactly as it is.
+
+### Window 2
+Open a **brand new PowerShell window** and paste only this:
+
+```powershell id="n42aj2"
+$p = "C:\RGBControl\01_Active_App\PC_RGB_Controller_App\team9-pc-rgb-controller-app\team9-pc-rgb-controller-app-phase9-windows-launcher-bundle-hotfix\project"
+& "$p\node_modules\.bin\electron.cmd" "$p\electron\main.cjs"
+```
+
+Do not paste anything else into either window after that.
+
+## 3. Verify
+
+If it works, the Team9 app window opens.
+
+If it opens black again, do this:
+- open your browser
+- go to `http://localhost:5173/`
+
+Then tell me one of these exact results:
+- `browser shows app`
+- `browser is blank too`
+
+## 4. Fallback
+
+If the second PowerShell window gives an error, paste only the **last 5 lines** from that second window.
+
+Best next move: leave the Vite window alone and run the Electron command in a second fresh PowerShell window only.
