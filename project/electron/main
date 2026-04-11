@@ -1,0 +1,91 @@
+const path = require('path');
+const { app, BrowserWindow, ipcMain, shell } = require('electron');
+
+const isDev = !app.isPackaged;
+
+function createWindow() {
+  const win = new BrowserWindow({
+    width: 1600,
+    height: 980,
+    minWidth: 1200,
+    minHeight: 760,
+    backgroundColor: '#0b0f14',
+    autoHideMenuBar: true,
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.cjs'),
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: false,
+    },
+  });
+
+  if (isDev) {
+    win.loadURL('http://localhost:5173');
+    win.webContents.openDevTools({ mode: 'detach' });
+  } else {
+    win.loadFile(path.join(__dirname, '../dist/index.html'));
+  }
+
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    shell.openExternal(url);
+    return { action: 'deny' };
+  });
+}
+
+app.whenReady().then(() => {
+  ipcMain.handle('team9:get-app-info', async () => ({
+    appName: 'Team9 RGB Controller',
+    version: app.getVersion(),
+    isPackaged: app.isPackaged,
+    platform: process.platform,
+  }));
+
+  ipcMain.handle('team9:get-state-bootstrap', async () => ({
+    ok: true,
+    devices: [],
+    library: [],
+    diagnostics: {
+      backend: 'rebuild-placeholder',
+      sync: 'unverified',
+    },
+  }));
+
+  ipcMain.handle('team9:backend-refresh-scan', async () => ({
+    ok: true,
+    refreshed: false,
+    reason: 'not-wired-yet',
+  }));
+
+  ipcMain.handle('team9:export-diagnostics-report', async () => ({
+    ok: false,
+    reason: 'not-wired-yet',
+  }));
+
+  ipcMain.handle('team9:run-machine-capture', async () => ({
+    ok: false,
+    reason: 'not-wired-yet',
+  }));
+
+  ipcMain.handle('team9:open-diagnostics-folder', async () => ({
+    ok: false,
+    reason: 'not-wired-yet',
+  }));
+
+  ipcMain.handle('team9:library-import-files', async () => []);
+  ipcMain.handle('team9:library-toggle-favorite', async (_event, assetId) => ({ ok: true, assetId }));
+  ipcMain.handle('team9:library-delete-asset', async (_event, assetId) => ({ ok: true, assetId }));
+  ipcMain.handle('team9:display-assign-asset', async (_event, payload) => ({ ok: true, ...payload }));
+  ipcMain.handle('team9:display-set-mode', async (_event, payload) => ({ ok: true, ...payload }));
+  ipcMain.handle('team9:app-set-selected-display', async (_event, deviceId) => ({ ok: true, deviceId }));
+  ipcMain.handle('team9:library-select-asset', async (_event, assetId) => ({ ok: true, assetId }));
+
+  createWindow();
+
+  app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) createWindow();
+  });
+});
+
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') app.quit();
+});
