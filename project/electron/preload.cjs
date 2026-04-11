@@ -19,3 +19,4 @@ contextBridge.exposeInMainWorld('team9Bridge', {
   selectLibraryAsset: (assetId) =>
     ipcRenderer.invoke('team9:library-select-asset', assetId),
 });
+
