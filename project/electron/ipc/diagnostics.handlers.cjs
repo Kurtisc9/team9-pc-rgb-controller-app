@@ -37,34 +37,59 @@ function registerDiagnosticsHandlers({ app }) {
   });
 
   ipcMain.handle('team9:export-diagnostics-report', async () => {
-    const folder = getDiagnosticsFolder(app);
-    ensureFolder(folder);
+    try {
+      const folder = getDiagnosticsFolder(app);
+      ensureFolder(folder);
 
-    const report = {
-      exportedAt: new Date().toISOString(),
-      backend: 'rebuild-placeholder',
-      sync: 'unverified',
-      platform: process.platform,
-      arch: process.arch,
-      hostname: os.hostname(),
-    };
+      const report = {
+        exportedAt: new Date().toISOString(),
+        backend: 'rebuild-placeholder',
+        sync: 'unverified',
+        platform: process.platform,
+        arch: process.arch,
+        hostname: os.hostname(),
+      };
 
-    const fileName = `team9-diagnostics-${Date.now()}.json`;
-    const filePath = path.join(folder, fileName);
+      const fileName = `team9-diagnostics-${Date.now()}.json`;
+      const filePath = path.join(folder, fileName);
 
-    fs.writeFileSync(filePath, JSON.stringify(report, null, 2), 'utf8');
+      fs.writeFileSync(filePath, JSON.stringify(report, null, 2), 'utf8');
 
-    return {
-      ok: true,
-      filePath,
-    };
+      return {
+        ok: true,
+        filePath,
+      };
+    } catch (error) {
+      return {
+        ok: false,
+        reason: 'export-failed',
+        message: error instanceof Error ? error.message : 'Unknown export error',
+      };
+    }
   });
 
   ipcMain.handle('team9:open-diagnostics-folder', async () => {
-    const folder = getDiagnosticsFolder(app);
-    ensureFolder(folder);
-    await shell.openPath(folder);
-    return { ok: true, folder };
+    try {
+      const folder = getDiagnosticsFolder(app);
+      ensureFolder(folder);
+
+      const openResult = await shell.openPath(folder);
+      if (openResult) {
+        return {
+          ok: false,
+          reason: 'open-path-failed',
+          message: openResult,
+        };
+      }
+
+      return { ok: true, folder };
+    } catch (error) {
+      return {
+        ok: false,
+        reason: 'open-folder-failed',
+        message: error instanceof Error ? error.message : 'Unknown open error',
+      };
+    }
   });
 }
 
