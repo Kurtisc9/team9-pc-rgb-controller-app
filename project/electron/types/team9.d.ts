@@ -5,29 +5,37 @@ export type Team9AppInfo = {
   platform: string;
 };
 
+export type Team9Device = {
+  id: string;
+  name: string;
+  subtitle?: string;
+  category: string;
+  displayPath: string;
+  rgbPath: string;
+  syncTruth: string;
+  status?: string;
+  assignedAssetId?: string | null;
+  mode?: string;
+};
+
+export type Team9LibraryAsset = {
+  id: string;
+  name: string;
+  path: string;
+  favorite: boolean;
+  type: string;
+};
+
 export type Team9BootstrapState = {
   ok: boolean;
   app: {
     mode: string;
     priority: string;
   };
-  devices: Array<{
-    id: string;
-    name: string;
-    subtitle?: string;
-    category: string;
-    displayPath: string;
-    rgbPath: string;
-    syncTruth: string;
-  }>;
+  devices: Team9Device[];
   selectedDisplayId: string;
-  library: Array<{
-    id: string;
-    name: string;
-    path: string;
-    favorite: boolean;
-    type: string;
-  }>;
+  library: Team9LibraryAsset[];
+  selectedAssetId?: string | null;
   diagnostics: {
     backend: string;
     sync: string;
