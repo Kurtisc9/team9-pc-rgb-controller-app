@@ -7,6 +7,7 @@ const deviceRegistry = [
     displayPath: 'standalone-display',
     rgbPath: 'standalone-lighting',
     syncTruth: 'standalone',
+    status: 'unknown',
   },
   {
     id: 'universal-screen-8-8',
@@ -16,6 +17,7 @@ const deviceRegistry = [
     displayPath: 'standalone-display',
     rgbPath: 'l-connect',
     syncTruth: 'linked-via-l-connect',
+    status: 'unknown',
   },
 ];
 
