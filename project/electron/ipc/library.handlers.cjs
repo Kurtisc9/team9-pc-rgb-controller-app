@@ -38,8 +38,11 @@ function registerLibraryHandlers({ dialog }) {
       return [];
     }
 
+    const existingPaths = new Set(libraryState.assets.map((asset) => asset.path));
+
     const added = result.filePaths
       .filter((filePath) => fs.existsSync(filePath))
+      .filter((filePath) => !existingPaths.has(filePath))
       .map(normalizeAsset);
 
     libraryState.assets.push(...added);
@@ -76,6 +79,10 @@ function registerLibraryHandlers({ dialog }) {
   });
 }
 
+module.exports = {
+  registerLibraryHandlers,
+  libraryState,
+};
 module.exports = {
   registerLibraryHandlers,
   libraryState,
