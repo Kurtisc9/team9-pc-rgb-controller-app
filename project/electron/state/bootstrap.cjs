@@ -1,4 +1,6 @@
 const { deviceRegistry } = require('./device-registry.cjs');
+const { libraryState } = require('../ipc/library.handlers.cjs');
+const { displayAssignments, displayModes } = require('../ipc/display.handlers.cjs');
 
 function buildBootstrapState({ selectedDisplayId }) {
   return {
@@ -7,9 +9,18 @@ function buildBootstrapState({ selectedDisplayId }) {
       mode: 'stabilization-first',
       priority: 'lcd-media-first',
     },
-    devices: deviceRegistry,
+
+    devices: deviceRegistry.map((device) => ({
+      ...device,
+      assignedAssetId: displayAssignments[device.id] || null,
+      mode: displayModes[device.id] || 'image',
+    })),
+
     selectedDisplayId,
-    library: [],
+
+    library: libraryState.assets,
+    selectedAssetId: libraryState.selectedAssetId,
+
     diagnostics: {
       backend: 'rebuild-placeholder',
       sync: 'unverified',
@@ -22,6 +33,7 @@ function buildBootstrapState({ selectedDisplayId }) {
         'missing-offline-broken-link',
       ],
     },
+
     pages: [
       'Home',
       'LCD / Media',
