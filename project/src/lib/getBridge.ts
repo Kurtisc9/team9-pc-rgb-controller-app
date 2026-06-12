@@ -5,4 +5,3 @@ export function getBridge() {
 
   return window.team9Bridge;
 }
-}
