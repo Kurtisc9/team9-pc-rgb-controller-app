@@ -22,6 +22,37 @@ export interface Team9LibraryAsset {
   type: Team9AssetType;
 }
 
+export interface Team9HardwareBackend {
+  id: string;
+  label: string;
+  available: boolean;
+  confidence: 'none' | 'medium' | 'high';
+  verificationStatus: string;
+  runtimeProcesses: string[];
+  installPaths: string[];
+  controls: string[];
+  lastCheckAt: string;
+  safeMode: boolean;
+  writeAccess: boolean;
+}
+
+export interface Team9HardwareScan {
+  ok: boolean;
+  scannedAt: string;
+  platform: string;
+  arch: string;
+  hostname: string;
+  machine: {
+    cpus: number;
+    totalMemoryGB: number;
+    freeMemoryGB: number;
+  };
+  summary: string;
+  sync: string;
+  backends: Team9HardwareBackend[];
+  warnings: string[];
+}
+
 export interface Team9BootstrapState {
   ok: boolean;
   app: {
@@ -35,7 +66,9 @@ export interface Team9BootstrapState {
   diagnostics: {
     backend: string;
     sync: string;
+    scannedAt?: string | null;
     statuses?: string[];
+    hardware?: Team9HardwareScan | null;
   };
   pages?: string[];
 }
