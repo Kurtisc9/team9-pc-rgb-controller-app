@@ -1,8 +1,9 @@
 import { useMemo, useState } from 'react';
 import { getBridge } from './lib/getBridge';
 import { useBootstrap } from './hooks/useBootstrap';
+import type { Team9DisplayMode } from './types/team9';
 
-const modeOptions = ['image', 'video', 'clock', 'system', 'off'];
+const modeOptions: Team9DisplayMode[] = ['image', 'video', 'clock', 'system', 'off'];
 
 export default function App() {
   const { data, loading, error, reload } = useBootstrap();
@@ -14,102 +15,76 @@ export default function App() {
     return data.devices.find((device) => device.id === data.selectedDisplayId) ?? null;
   }, [data]);
 
-  async function handleImportFiles() {
+  async function runAction(actionId: string, fallbackMessage: string, action: () => Promise<unknown>) {
     try {
-      setBusy('import');
+      setBusy(actionId);
       setMessage('');
-      await getBridge().importLibraryFiles();
-      await reload();
-      setMessage('Library import complete.');
-    } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'Library import failed.');
-    } finally {
-      setBusy(null);
-    }
-  }
+      const result = await action();
 
-  async function handleSelectDisplay(deviceId: string) {
-    try {
-      setBusy(`display:${deviceId}`);
-      setMessage('');
-      await getBridge().setSelectedDisplay(deviceId);
-      await reload();
-    } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'Display selection failed.');
-    } finally {
-      setBusy(null);
-    }
-  }
-
-  async function handleSetMode(deviceId: string, mode: string) {
-    try {
-      setBusy(`mode:${deviceId}`);
-      setMessage('');
-      await getBridge().setDisplayMode(deviceId, mode);
-      await reload();
-    } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'Mode update failed.');
-    } finally {
-      setBusy(null);
-    }
-  }
-
-  async function handleSelectAsset(assetId: string) {
-    try {
-      setBusy(`asset:${assetId}`);
-      setMessage('');
-      await getBridge().selectLibraryAsset(assetId);
-
-      if (data?.selectedDisplayId) {
-        await getBridge().assignAssetToDisplay(data.selectedDisplayId, assetId);
+      if (result && typeof result === 'object' && 'note' in result && typeof result.note === 'string') {
+        setMessage(result.note);
+      } else if (result && typeof result === 'object' && 'filePath' in result && typeof result.filePath === 'string') {
+        setMessage(`Diagnostics report exported: ${result.filePath}`);
+      } else if (result && typeof result === 'object' && 'folder' in result && typeof result.folder === 'string') {
+        setMessage(`Diagnostics folder opened: ${result.folder}`);
+      } else {
+        setMessage(fallbackMessage);
       }
 
       await reload();
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'Asset selection failed.');
+      setMessage(err instanceof Error ? err.message : `${fallbackMessage} failed.`);
     } finally {
       setBusy(null);
     }
+  }
+
+  async function handleImportFiles() {
+    await runAction('import', 'Library import complete.', async () => getBridge().importLibraryFiles());
+  }
+
+  async function handleSelectDisplay(deviceId: string) {
+    await runAction(`display:${deviceId}`, 'Display selected.', async () => getBridge().setSelectedDisplay(deviceId));
+  }
+
+  async function handleSetMode(deviceId: string, mode: Team9DisplayMode) {
+    await runAction(`mode:${deviceId}`, 'Mode updated.', async () => getBridge().setDisplayMode(deviceId, mode));
+  }
+
+  async function handleSelectAsset(assetId: string) {
+    await runAction(`asset:${assetId}`, 'Asset selected and assigned.', async () => {
+      await getBridge().selectLibraryAsset(assetId);
+
+      if (data?.selectedDisplayId) {
+        return getBridge().assignAssetToDisplay(data.selectedDisplayId, assetId);
+      }
+
+      return { ok: true };
+    });
   }
 
   async function handleToggleFavorite(assetId: string) {
-    try {
-      setBusy(`favorite:${assetId}`);
-      setMessage('');
-      await getBridge().toggleLibraryFavorite(assetId);
-      await reload();
-    } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'Favorite toggle failed.');
-    } finally {
-      setBusy(null);
-    }
+    await runAction(`favorite:${assetId}`, 'Favorite updated.', async () => getBridge().toggleLibraryFavorite(assetId));
   }
 
   async function handleDeleteAsset(assetId: string) {
-    try {
-      setBusy(`delete:${assetId}`);
-      setMessage('');
-      await getBridge().deleteLibraryAsset(assetId);
-      await reload();
-    } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'Delete failed.');
-    } finally {
-      setBusy(null);
-    }
+    await runAction(`delete:${assetId}`, 'Asset deleted.', async () => getBridge().deleteLibraryAsset(assetId));
   }
 
   async function handleRunDiagnostics() {
-    try {
-      setBusy('diagnostics');
-      setMessage('');
-      const result = await getBridge().refreshBackendHealth();
-      setMessage(result?.note || 'Diagnostics refresh complete.');
-      await reload();
-    } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'Diagnostics refresh failed.');
-    } finally {
-      setBusy(null);
-    }
+    await runAction('diagnostics', 'Diagnostics refresh complete.', async () => getBridge().refreshBackendHealth());
+  }
+
+  async function handleExportDiagnostics() {
+    await runAction('diagnostics-export', 'Diagnostics report exported.', async () => getBridge().exportDiagnosticsReport());
+  }
+
+  async function handleMachineCapture() {
+    await runAction('machine-capture', 'Machine capture complete.', async () => getBridge().runMachineCapture());
+  }
+
+  async function handleOpenDiagnosticsFolder() {
+    await runAction('diagnostics-folder', 'Diagnostics folder opened.', async () => getBridge().openDiagnosticsFolder());
   }
 
   if (loading) {
@@ -143,6 +118,15 @@ export default function App() {
           </button>
           <button onClick={handleRunDiagnostics} disabled={busy !== null} style={styles.button}>
             Refresh Diagnostics
+          </button>
+          <button onClick={handleExportDiagnostics} disabled={busy !== null} style={styles.button}>
+            Export Report
+          </button>
+          <button onClick={handleMachineCapture} disabled={busy !== null} style={styles.button}>
+            Machine Capture
+          </button>
+          <button onClick={handleOpenDiagnosticsFolder} disabled={busy !== null} style={styles.button}>
+            Open Diagnostics Folder
           </button>
         </div>
       </div>
@@ -229,6 +213,7 @@ export default function App() {
             <div style={styles.metaColumn}>
               <span>Backend: {data.diagnostics.backend}</span>
               <span>Sync: {data.diagnostics.sync}</span>
+              {data.diagnostics.statuses?.map((status) => <span key={status}>Status: {status}</span>)}
             </div>
           </div>
         </section>
@@ -321,6 +306,7 @@ const styles: Record<string, React.CSSProperties> = {
     display: 'flex',
     gap: 10,
     flexWrap: 'wrap',
+    justifyContent: 'flex-end',
   },
   button: {
     background: '#18212c',
