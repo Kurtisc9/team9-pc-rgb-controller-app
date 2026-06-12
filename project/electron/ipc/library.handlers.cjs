@@ -20,7 +20,8 @@ function normalizeAsset(filePath) {
 
 function inferAssetType(fileName) {
   const ext = path.extname(fileName).toLowerCase();
-  if (['.png', '.jpg', '.jpeg', '.webp', '.gif'].includes(ext)) return 'image';
+  if (['.png', '.jpg', '.jpeg', '.webp'].includes(ext)) return 'image';
+  if (['.gif'].includes(ext)) return 'gif';
   if (['.mp4', '.webm', '.mov'].includes(ext)) return 'video';
   return 'other';
 }
@@ -79,10 +80,6 @@ function registerLibraryHandlers({ dialog }) {
   });
 }
 
-module.exports = {
-  registerLibraryHandlers,
-  libraryState,
-};
 module.exports = {
   registerLibraryHandlers,
   libraryState,
