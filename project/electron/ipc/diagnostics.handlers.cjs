@@ -1,7 +1,9 @@
 const fs = require('fs');
-const os = require('os');
 const path = require('path');
 const { ipcMain, shell } = require('electron');
+const { detectHardware } = require('../hardware/detect-hardware.cjs');
+
+let latestHardwareScan = null;
 
 function getDiagnosticsFolder(app) {
   const base = app.getPath('documents');
@@ -12,27 +14,37 @@ function ensureFolder(folderPath) {
   fs.mkdirSync(folderPath, { recursive: true });
 }
 
+async function runHardwareScan() {
+  latestHardwareScan = await detectHardware();
+  return latestHardwareScan;
+}
+
+function getLatestHardwareScan() {
+  return latestHardwareScan;
+}
+
 function registerDiagnosticsHandlers({ app }) {
   ipcMain.handle('team9:backend-refresh-scan', async () => {
+    const scan = await runHardwareScan();
+
     return {
-      ok: true,
-      timestamp: new Date().toISOString(),
-      backend: 'rebuild-placeholder',
-      sync: 'unverified',
-      note: 'Foundation rebuild active. Real backend scan not attached yet.',
+      ...scan,
+      note: scan.summary,
     };
   });
 
   ipcMain.handle('team9:run-machine-capture', async () => {
+    const scan = await runHardwareScan();
+
     return {
       ok: true,
-      machine: {
-        platform: process.platform,
-        arch: process.arch,
-        hostname: os.hostname(),
-        cpus: os.cpus().length,
-        totalMemoryGB: Number((os.totalmem() / 1024 / 1024 / 1024).toFixed(2)),
-      },
+      scannedAt: scan.scannedAt,
+      machine: scan.machine,
+      platform: scan.platform,
+      arch: scan.arch,
+      hostname: scan.hostname,
+      backends: scan.backends,
+      note: 'Machine capture complete with hardware backend evidence.',
     };
   });
 
@@ -41,13 +53,10 @@ function registerDiagnosticsHandlers({ app }) {
       const folder = getDiagnosticsFolder(app);
       ensureFolder(folder);
 
+      const scan = latestHardwareScan || (await runHardwareScan());
       const report = {
         exportedAt: new Date().toISOString(),
-        backend: 'rebuild-placeholder',
-        sync: 'unverified',
-        platform: process.platform,
-        arch: process.arch,
-        hostname: os.hostname(),
+        ...scan,
       };
 
       const fileName = `team9-diagnostics-${Date.now()}.json`;
@@ -58,6 +67,7 @@ function registerDiagnosticsHandlers({ app }) {
       return {
         ok: true,
         filePath,
+        note: `Diagnostics report exported: ${filePath}`,
       };
     } catch (error) {
       return {
@@ -95,4 +105,6 @@ function registerDiagnosticsHandlers({ app }) {
 
 module.exports = {
   registerDiagnosticsHandlers,
+  runHardwareScan,
+  getLatestHardwareScan,
 };
