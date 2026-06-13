@@ -4,6 +4,7 @@ const { registerAppHandlers } = require('./ipc/app.handlers.cjs');
 const { registerLibraryHandlers } = require('./ipc/library.handlers.cjs');
 const { registerDisplayHandlers } = require('./ipc/display.handlers.cjs');
 const { registerDiagnosticsHandlers } = require('./ipc/diagnostics.handlers.cjs');
+const { configurePersistence } = require('./state/persistence.cjs');
 
 const isDev = !app.isPackaged;
 
@@ -39,6 +40,7 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  configurePersistence({ app });
   const mainWindow = createWindow();
 
   registerAppHandlers({ app });
