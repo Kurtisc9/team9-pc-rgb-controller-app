@@ -14,9 +14,10 @@ contextBridge.exposeInMainWorld('team9Bridge', {
     ipcRenderer.invoke('team9:display-assign-asset', { deviceId, assetId }),
   setDisplayMode: (deviceId, mode) =>
     ipcRenderer.invoke('team9:display-set-mode', { deviceId, mode }),
+  stageSafePreset: (deviceId, presetId, confirmed) =>
+    ipcRenderer.invoke('team9:display-stage-safe-preset', { deviceId, presetId, confirmed }),
   setSelectedDisplay: (deviceId) =>
     ipcRenderer.invoke('team9:app-set-selected-display', deviceId),
   selectLibraryAsset: (assetId) =>
     ipcRenderer.invoke('team9:library-select-asset', assetId),
 });
-
