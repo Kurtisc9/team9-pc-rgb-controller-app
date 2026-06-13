@@ -1,6 +1,9 @@
 const { ipcMain } = require('electron');
 const { deviceRegistry } = require('../state/device-registry.cjs');
 const { getLatestHardwareScan } = require('./diagnostics.handlers.cjs');
+const { readJson, writeJson } = require('../state/persistence.cjs');
+
+const DISPLAY_FILE = 'display-state.json';
 
 const displayAssignments = {};
 const displayModes = {};
@@ -14,6 +17,48 @@ function deviceExists(deviceId) {
 
 function getDevice(deviceId) {
   return deviceRegistry.find((device) => device.id === deviceId) || null;
+}
+
+function sanitizeDeviceMap(value) {
+  const safe = {};
+
+  if (!value || typeof value !== 'object') return safe;
+
+  for (const [deviceId, entry] of Object.entries(value)) {
+    if (deviceExists(deviceId) && typeof entry === 'string') {
+      safe[deviceId] = entry;
+    }
+  }
+
+  return safe;
+}
+
+function loadDisplayState() {
+  const saved = readJson(DISPLAY_FILE, {
+    assignments: {},
+    modes: {},
+    stagedPresets: {},
+  });
+
+  Object.assign(displayAssignments, sanitizeDeviceMap(saved.assignments));
+  Object.assign(displayModes, sanitizeDeviceMap(saved.modes));
+
+  if (saved.stagedPresets && typeof saved.stagedPresets === 'object') {
+    for (const [deviceId, preset] of Object.entries(saved.stagedPresets)) {
+      if (deviceExists(deviceId) && preset && typeof preset === 'object') {
+        stagedPresets[deviceId] = preset;
+      }
+    }
+  }
+}
+
+function saveDisplayState() {
+  return writeJson(DISPLAY_FILE, {
+    assignments: displayAssignments,
+    modes: displayModes,
+    stagedPresets,
+    savedAt: new Date().toISOString(),
+  });
 }
 
 function getDetectedBackend(deviceId) {
@@ -30,6 +75,8 @@ function getDetectedBackend(deviceId) {
 }
 
 function registerDisplayHandlers() {
+  loadDisplayState();
+
   ipcMain.handle('team9:display-assign-asset', async (_event, payload) => {
     const { deviceId, assetId } = payload || {};
 
@@ -42,6 +89,7 @@ function registerDisplayHandlers() {
     }
 
     displayAssignments[deviceId] = assetId;
+    saveDisplayState();
 
     return {
       ok: true,
@@ -62,6 +110,7 @@ function registerDisplayHandlers() {
     }
 
     displayModes[deviceId] = mode;
+    saveDisplayState();
 
     return {
       ok: true,
@@ -108,6 +157,8 @@ function registerDisplayHandlers() {
       dryRun: true,
     };
 
+    saveDisplayState();
+
     return {
       ok: true,
       deviceId,
@@ -126,4 +177,6 @@ module.exports = {
   displayAssignments,
   displayModes,
   stagedPresets,
+  loadDisplayState,
+  saveDisplayState,
 };
