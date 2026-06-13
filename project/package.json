@@ -8,7 +8,9 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "start:electron": "electron ."
+    "start:electron": "electron .",
+    "package:dir": "npm run build && electron-builder --dir",
+    "package:win": "npm run build && electron-builder --win nsis --publish never"
   },
   "dependencies": {
     "react": "^18.3.1",
@@ -21,7 +23,32 @@
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",
     "electron": "^31.7.7",
+    "electron-builder": "^24.13.3",
     "typescript": "^5.5.4",
     "vite": "^5.4.0"
+  },
+  "build": {
+    "appId": "com.team9.pc-rgb-controller",
+    "productName": "Team9 PC RGB Controller",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "artifactName": "Team9-PC-RGB-Controller-${version}-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
   }
 }
