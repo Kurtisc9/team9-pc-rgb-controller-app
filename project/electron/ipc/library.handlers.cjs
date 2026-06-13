@@ -1,11 +1,30 @@
 const fs = require('fs');
 const path = require('path');
 const { ipcMain } = require('electron');
+const { readJson, writeJson } = require('../state/persistence.cjs');
+
+const LIBRARY_FILE = 'library-state.json';
 
 const libraryState = {
   selectedAssetId: null,
   assets: [],
 };
+
+function loadLibraryState() {
+  const saved = readJson(LIBRARY_FILE, libraryState);
+  libraryState.selectedAssetId = saved.selectedAssetId || null;
+  libraryState.assets = Array.isArray(saved.assets) ? saved.assets.filter((asset) => fs.existsSync(asset.path)) : [];
+
+  if (libraryState.selectedAssetId && !libraryState.assets.some((asset) => asset.id === libraryState.selectedAssetId)) {
+    libraryState.selectedAssetId = null;
+  }
+
+  saveLibraryState();
+}
+
+function saveLibraryState() {
+  return writeJson(LIBRARY_FILE, libraryState);
+}
 
 function normalizeAsset(filePath) {
   const fileName = path.basename(filePath);
@@ -15,6 +34,7 @@ function normalizeAsset(filePath) {
     path: filePath,
     favorite: false,
     type: inferAssetType(fileName),
+    importedAt: new Date().toISOString(),
   };
 }
 
@@ -27,6 +47,8 @@ function inferAssetType(fileName) {
 }
 
 function registerLibraryHandlers({ dialog }) {
+  loadLibraryState();
+
   ipcMain.handle('team9:library-import-files', async () => {
     const result = await dialog.showOpenDialog({
       properties: ['openFile', 'multiSelections'],
@@ -47,6 +69,7 @@ function registerLibraryHandlers({ dialog }) {
       .map(normalizeAsset);
 
     libraryState.assets.push(...added);
+    saveLibraryState();
     return added;
   });
 
@@ -55,6 +78,7 @@ function registerLibraryHandlers({ dialog }) {
     if (!asset) return { ok: false, reason: 'asset-not-found' };
 
     asset.favorite = !asset.favorite;
+    saveLibraryState();
     return { ok: true, asset };
   });
 
@@ -68,6 +92,7 @@ function registerLibraryHandlers({ dialog }) {
       libraryState.selectedAssetId = null;
     }
 
+    saveLibraryState();
     return { ok: true, removed };
   });
 
@@ -76,6 +101,7 @@ function registerLibraryHandlers({ dialog }) {
     if (!asset) return { ok: false, reason: 'asset-not-found' };
 
     libraryState.selectedAssetId = assetId;
+    saveLibraryState();
     return { ok: true, selectedAssetId: assetId };
   });
 }
@@ -83,4 +109,6 @@ function registerLibraryHandlers({ dialog }) {
 module.exports = {
   registerLibraryHandlers,
   libraryState,
+  loadLibraryState,
+  saveLibraryState,
 };
