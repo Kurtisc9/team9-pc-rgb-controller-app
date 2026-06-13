@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { getBridge } from './lib/getBridge';
 import { useBootstrap } from './hooks/useBootstrap';
-import type { Team9DisplayMode } from './types/team9';
+import { SafePresetControls } from './components/SafePresetControls';
+import type { Team9DisplayMode, Team9SafePreset } from './types/team9';
 
 const modeOptions: Team9DisplayMode[] = ['image', 'video', 'clock', 'system', 'off'];
 
@@ -21,7 +22,9 @@ export default function App() {
       setMessage('');
       const result = await action();
 
-      if (result && typeof result === 'object' && 'note' in result && typeof result.note === 'string') {
+      if (result && typeof result === 'object' && 'message' in result && typeof result.message === 'string') {
+        setMessage(result.message);
+      } else if (result && typeof result === 'object' && 'note' in result && typeof result.note === 'string') {
         setMessage(result.note);
       } else if (result && typeof result === 'object' && 'filePath' in result && typeof result.filePath === 'string') {
         setMessage(`Diagnostics report exported: ${result.filePath}`);
@@ -49,6 +52,12 @@ export default function App() {
 
   async function handleSetMode(deviceId: string, mode: Team9DisplayMode) {
     await runAction(`mode:${deviceId}`, 'Mode updated.', async () => getBridge().setDisplayMode(deviceId, mode));
+  }
+
+  async function handleStagePreset(deviceId: string, presetId: Team9SafePreset) {
+    await runAction(`stage:${deviceId}:${presetId}`, 'Safe preview staged.', async () =>
+      getBridge().stageSafePreset(deviceId, presetId, true),
+    );
   }
 
   async function handleSelectAsset(assetId: string) {
@@ -186,6 +195,8 @@ export default function App() {
                       </button>
                     ))}
                   </div>
+
+                  <SafePresetControls device={device} busy={busy} onStagePreset={handleStagePreset} />
                 </div>
               );
             })}
