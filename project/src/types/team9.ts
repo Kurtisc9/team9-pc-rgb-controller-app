@@ -1,5 +1,6 @@
 export type Team9DisplayMode = 'image' | 'video' | 'clock' | 'system' | 'off';
 export type Team9AssetType = 'image' | 'video' | 'gif' | 'other';
+export type Team9SafePreset = 'off' | 'static-white' | 'static-red' | 'static-green' | 'static-blue' | 'rainbow-preview';
 
 export interface Team9Device {
   id: string;
@@ -93,6 +94,7 @@ export interface Team9Bridge {
   deleteLibraryAsset: (assetId: string) => Promise<Team9Result>;
   assignAssetToDisplay: (deviceId: string, assetId: string) => Promise<Team9Result>;
   setDisplayMode: (deviceId: string, mode: Team9DisplayMode) => Promise<Team9Result>;
+  stageSafePreset: (deviceId: string, presetId: Team9SafePreset, confirmed: boolean) => Promise<Team9Result>;
   setSelectedDisplay: (deviceId: string) => Promise<Team9Result>;
   selectLibraryAsset: (assetId: string) => Promise<Team9Result>;
 }
